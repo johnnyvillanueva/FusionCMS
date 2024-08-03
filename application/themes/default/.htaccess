@@ -4,7 +4,7 @@ IndexIgnore *
 
 # Deny access to tpl and json files
 <Files ~ "\.(tpl|json)$">
-    Deny from all
+    Require all denied
 </Files>
 
 <IfModule mod_deflate.c>
