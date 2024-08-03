@@ -42,9 +42,7 @@ AddDefaultCharset utf-8
   Options -Indexes
 </IfModule>
 <FilesMatch "(\.(bak|config|dist|fla|inc|ini|log|psd|sh|sql|swp)|~)$">
-  Order allow,deny
-  Deny from all
-  Satisfy All
+   Require all denied
 </FilesMatch>
 # Prevent 404 Errors for Non-Existing Redirected Folders
 
@@ -179,11 +177,9 @@ ModPagespeedEnableFilters collapse_whitespace,remove_comments
 
 # deny direct access on git
 <Files .gitignore>
-    order allow,deny
-    Deny from all
+    Require all denied
 </Files>
 
 <Files .git>
-    order allow,deny
-    Deny from all
+    Require all denied
 </Files>
