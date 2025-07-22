@@ -4,8 +4,13 @@
 <!--nstart-->
 
 <span class='q{$item.quality}' style='font-size: 16px'>{$item.name}</span><br />
+
+{if $item.isHeroic}<div class="q2">Heroic</div>{/if}
+
+{if $item.level}<span class='q'>{lang("item_level", "tooltip")} {$item.level}</span><br />{/if}
 <!--nend-->
 
+{if $item.account_wide}Account Bound<br />{/if}
 {if $item.bind}{$item.bind}<br />{/if}
 {if $item.unique}{$item.unique}<br />{/if}
 {if $item.slot}<div style='float:left;'>{$item.slot}</div>{/if}
@@ -25,18 +30,22 @@
 	{/foreach}
 {/if}
 
-{if $item.holy_res}+ {$item.holy_res} {lang("holy", "tooltip")}<br />{/if}
-{if $item.nature_res}+ {$item.nature_res} {lang("nature", "tooltip")}<br />{/if}
-{if $item.fire_res}+ {$item.fire_res} {lang("fire", "tooltip")}<br />{/if}
-{if $item.frost_res}+ {$item.frost_res} {lang("frost", "tooltip")}<br />{/if}
-{if $item.shadow_res}+ {$item.shadow_res} {lang("shadow", "tooltip")}<br />{/if}
-{if $item.arcane_res}+ {$item.arcane_res} {lang("arcane", "tooltip")}<br />{/if}
+{foreach from=$item.resistances key=resistance_name item=resistance_value}
+	{if $resistance_value}+{$resistance_value} {$resistance_name}<br />{/if}
+{/foreach}
 
-{if $item.sockets}{$item.sockets}{/if}
+<div class="q2" id="item-enchantments"></div>
+
+<div id="item-sockets">
+	{if $item.sockets}{$item.sockets}{/if}
+</div>
+
+<div class="q0" id="item-socket-bonus" data-socket-bonus="{if $item.socketBonus}{$item.socketBonus}{/if}"></div>
 
 {if $item.durability}{lang("durability", "tooltip")} {$item.durability} / {$item.durability}<br />{/if}
 {if $item.required}{lang("requires_level", "tooltip")} {$item.required}<br />{/if}
-{if $item.level}{lang("item_level", "tooltip")} {$item.level}<br />{/if}
+
+{if count($item.AllowableClass) > 0}Classes: {foreach from=$item.AllowableClass key=classId item=className}<a href="https://www.wowhead.com/class={$classId}" class="color-c{$classId}">{$className}</a>{if !$className@last}, {/if}{/foreach}<br />{/if}
 
 {if count($item.attributes.spells) > 0}
 	{foreach from=$item.attributes.spells item=attribute}

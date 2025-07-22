@@ -1,6 +1,7 @@
 <?php
 
 use App\Config\Services;
+use CodeIgniter\Events\Events;
 use MX\MX_Controller;
 
 //API Container
@@ -36,7 +37,7 @@ class Donate extends MX_Controller
         $this->load->model('paypal_model');
     }
 
-    public function index()
+    public function index(): void
     {
         requirePermission("view");
 
@@ -54,12 +55,48 @@ class Donate extends MX_Controller
             }
         }
 
+        // Modules path: Forge
+        $modulesPath = rtrim(str_replace(['\\', '/'], DIRECTORY_SEPARATOR, realpath(APPPATH)), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . 'modules';
+
+        // Donate gateways: Initialize
+        $donateGateways = [];
+
+        // Donate gateways: Find
+        foreach(glob($modulesPath . DIRECTORY_SEPARATOR . 'donate_*', GLOB_ONLYDIR) as $key => $module)
+        {
+            // Donate gateways: Append
+            $donateGateways[$key] = [
+                'url'  => base_url() . basename($module),
+                'name' => ucfirst(strtolower(str_replace('donate_', '', basename($module)))),
+                'icon' => base_url() . strtolower(basename(APPPATH)) . '/' . strtolower(basename($modulesPath)) . '/' . strtolower($this->router->fetch_module()) . '/images/unknown.png'
+            ];
+
+            // Module: Loop through tree | Find icon
+            foreach(new RecursiveIteratorIterator(new RecursiveDirectoryIterator($module, FilesystemIterator::SKIP_DOTS)) as $file)
+            {
+                // SKIP.. invalid file
+                if(!$file->isFile())
+                    continue;
+
+                // Icon: Found
+                if(in_array(strtolower($file->getExtension()), ['jpg', 'jpeg', 'png']) && strpos(strtolower($file->getFilename()), strtolower($donateGateways[$key]['name'] . '.')) !== false)
+                {
+                    // Donate gateways: Fill (icon)
+                    $donateGateways[$key]['icon'] = base_url() . str_replace(FCPATH, '', $file->getPathname());
+
+                    // STOP.. no need to go any further
+                    break;
+                }
+            }
+        }
+
         $data = [
             "paypal" => $paypal,
             "user_id" => $user_id,
             "server_name" => $this->config->item('server_name'),
             "currency" => $this->config->item('donation_currency'),
             "currency_sign" => $this->config->item('donation_currency_sign'),
+            "additionalGateways" => $donateGateways
         ];
 
         $data['use_paypal'] = !empty($this->config->item("paypal_userid")) && !empty($this->config->item("paypal_secretpass")) && $this->config->item("use_paypal");
@@ -135,6 +172,10 @@ class Donate extends MX_Controller
                 // update income
                 $this->donate_model->updateMonthlyIncome($specify_donate['price']);
 
+                Events::trigger('onSuccessDonate', $this->user->getId(), $specify_donate);
+
+                $this->dblogger->createLog("user", "donate", $specify_donate['price'].$this->config->item('donation_currency_sign'), $specify_donate['points'], Dblogger::STATUS_SUCCEED, $this->user->getId());
+
                 redirect(base_url('/donate/success'));
             }
         } catch (Exception $e) {
@@ -142,6 +183,8 @@ class Donate extends MX_Controller
             $this->paypal_model->setError($payment_id, $e);
 
             log_message('error', $e);
+
+            Events::trigger('onErrorDonate', $payment_id, $e);
 
             redirect(base_url('/donate/error'));
         }

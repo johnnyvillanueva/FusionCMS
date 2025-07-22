@@ -78,7 +78,10 @@ class Unstuck extends MX_Controller
         //Load the page
         $page_data = array(
             "module" => "default",
-            "headline" => lang('unstuck', 'unstuck'),
+            "headline" => breadcrumb([
+                "ucp" => lang("ucp"),
+                "unstuck" => lang("unstuck", "unstuck")
+            ]),
             "content" => $page_content
         );
 
@@ -159,6 +162,8 @@ class Unstuck extends MX_Controller
                 if ($price > 0) {
                     $this->user->setVp($this->user->getVp() - $price);
                 }
+
+                $this->dblogger->createLog("user", "service", "Unstuck", $characterName, Dblogger::STATUS_SUCCEED, $this->user->getId());
 
                 //Successful
                 $data = [

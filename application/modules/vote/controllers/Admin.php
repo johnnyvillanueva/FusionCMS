@@ -1,8 +1,7 @@
 <?php
 
+use CodeIgniter\Events\Events;
 use MX\MX_Controller;
-
-// todo: NO PERMISSIONS!
 
 /**
  * Admin Vote Controller Class
@@ -29,10 +28,10 @@ class Admin extends MX_Controller
         $topsites = $this->vote_model->getVoteSites();
 
         // Prepare my data
-        $data = array(
+        $data = [
             'url' => $this->template->page_url,
             'topsites' => $topsites
-        );
+        ];
 
         // Load my view
         $output = $this->template->loadPage("admin.tpl", $data);
@@ -71,7 +70,7 @@ class Admin extends MX_Controller
         // Add log
         $this->dblogger->createLog('admin', 'add', 'Added topsite', ['Name' => $data['vote_sitename']]);
 
-        $this->plugins->onCreateSite($data);
+        Events::trigger('onCreateSiteVote', $data);
 
         die("yes");
     }
@@ -85,9 +84,9 @@ class Admin extends MX_Controller
         $this->administrator->setTitle('New topsite');
 
         // Prepare my data
-        $data = array(
+        $data = [
             'url' => $this->template->page_url,
-        );
+        ];
 
         // Load my view
         $output = $this->template->loadPage("admin_add.tpl", $data);
@@ -117,18 +116,16 @@ class Admin extends MX_Controller
 
         if (!$topsite) {
             show_error("There is no topsite with ID " . $id, 400);
-
-            die();
         }
 
         // Change the title
         $this->administrator->setTitle($topsite['vote_sitename']);
 
         // Prepare my data
-        $data = array(
+        $data = [
             'url' => $this->template->page_url,
             'topsite' => $topsite
-        );
+        ];
 
         $autofill = $this->getAutoFillData($topsite['vote_url']);
         if ($autofill['callback_support']) {
@@ -176,7 +173,7 @@ class Admin extends MX_Controller
         // Add log
         $this->dblogger->createLog('admin', 'edit', 'Edited topsite', ['ID' => $id]);
 
-        $this->plugins->onEditSite($id, $data);
+        Events::trigger('onEditSiteVote', $id, $data);
 
         die('window.location="' . $this->template->page_url . 'vote/admin"');
     }
@@ -200,7 +197,7 @@ class Admin extends MX_Controller
         // Add log
         $this->dblogger->createLog('admin', 'delete', 'Deleted topsite', ['ID' => $id]);
 
-        $this->plugins->onDelete($id);
+        Events::trigger('onDeleteSiteVote', $id);
     }
 
     /**
@@ -214,8 +211,8 @@ class Admin extends MX_Controller
     protected function getAutoFillData($url)
     {
         $url = strtolower($url);
-        if (! preg_match('#^https?://.+$#', $url)) {
-            $url = 'http://' . $url;
+        if (!preg_match('#^https?://.+$#', $url)) {
+            $url = 'https://' . $url;
         }
 
         $host = parse_url($url, PHP_URL_HOST);
@@ -225,38 +222,38 @@ class Admin extends MX_Controller
             return false;
         }
 
-        // remove www. from hostname
-        $name = preg_replace('/^(?:www\.)?(.+)$/', '$1', $host);
-
-        $data = array(
-            'name' => $name,
+        $data = [
             'callback_support' => false,
             'image' => null,
-        );
+        ];
+
+        // remove www. from hostname
+        $name = preg_replace('/^(?:www\.)?(.+)$/', '$1', $host);
 
         // check if image exists for this site
         if ($files = glob(APPPATH . 'modules/vote/images/vote_sites/' . $name . '.*')) {
             $data['image'] = base_url() . 'application/modules/vote/images/vote_sites/' . substr($files[0], strrpos($files[0], '/') + 1);
         }
 
-        // check if the site has a callback plugin
-        $plugins = $this->plugins->getPlugins();
+        $topWebsite = preg_replace('/\.[a-z]{2,}$/', '', $name);
 
-        foreach ($plugins as $plugin) {
-            if (isset($plugin->url) && str_contains($plugin->url, $name)) {
-                $data['callback_support'] = true;
-                $data['votelink_format'] = $plugin->voteLinkFormat;
-                $data['url'] = $plugin->url;
+        $libraryPath = APPPATH . 'modules/vote/libraries/' . ucfirst($topWebsite) . '.php';
 
-                $tpl = strtolower(get_class($plugin)) . '.tpl';
-                if (! file_exists(APPPATH . 'modules/vote/views/callbackHelp/' . $tpl)) {
-                    $tpl = 'default.tpl';
-                }
+        if (file_exists($libraryPath))
+            $this->load->library($topWebsite);
 
-                $data['callback_help'] = $this->template->loadPage('callbackHelp/' . $tpl, array(
-                    'callback_url' => base_url() . 'vote/callback/' . $name
-                ));
+        if (isset($this->$topWebsite->url) && str_contains($this->$topWebsite->url, $name)) {
+            $data['callback_support'] = true;
+            $data['votelink_format'] = $this->$topWebsite->voteLinkFormat;
+            $data['url'] = $this->$topWebsite->url;
+            $data['name'] = $this->$topWebsite->name;
+
+            $tpl = $topWebsite . '.tpl';
+            if (! file_exists(APPPATH . 'modules/vote/views/callbackHelp/' . $tpl)) {
+                $tpl = 'default.tpl';
             }
+
+            $data['callback_help'] = $this->template->loadPage('callbackHelp/' . $tpl, ['callback_url' => base_url() . 'vote/callback/' . $data['name']]);
         }
 
         return $data;

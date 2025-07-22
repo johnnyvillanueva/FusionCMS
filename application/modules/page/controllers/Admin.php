@@ -1,5 +1,6 @@
 <?php
 
+use CodeIgniter\Events\Events;
 use MX\MX_Controller;
 
 /**
@@ -123,7 +124,7 @@ class Admin extends MX_Controller
         // Add log
 		$this->dblogger->createLog("admin", "delete", "Deleted page", ['ID' => $id]);
 
-        $this->plugins->onDelete($id);
+        Events::trigger('onDeletePage', $id);
     }
 
     public function create($id = false)
@@ -168,21 +169,25 @@ class Admin extends MX_Controller
                 $this->page_model->deletePermission($id);
             }
 
+            $this->acl->clearCache();
+
             // Add log
             $this->dblogger->createLog("admin", "edit", "Edited page", ['ID' => $id, 'Page' => $headline]);
 
-            $this->plugins->onUpdate($id, $headline, $identifier, $content);
+            Events::trigger('onUpdatePage', $id, $headline, $identifier, $content);
         } else {
             $id = $this->page_model->create($headline, $identifier, $content);
 
             if ($this->input->post('visibility') == "group") {
                 $this->page_model->setPermission($id);
+
+                $this->acl->clearCache();
             }
 
             // Add log
             $this->dblogger->createLog("admin", "add", "Added page", ['ID' => $id, 'Page' => $headline]);
 
-            $this->plugins->onCreate($id, $headline, $identifier, $content);
+            Events::trigger('onCreatePage', $id, $headline, $identifier, $content);
         }
 
         die("yes");

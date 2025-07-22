@@ -225,7 +225,7 @@ class Template
      * @param bool|String $css Full path to your css file
      * @param bool|String $js Full path to your js file
      */
-    public function view(string $content, bool|string $css = false, bool|string $js = false)
+    public function view(string $content, bool|string|array $css = false, bool|string|array $js = false)
     {
         // Avoid loading the main site in the ACP layout
         if ($this->CI->input->get('is_acp'))
@@ -261,16 +261,17 @@ class Template
      * Handles the normal loading.
      *
      * @param  $content
-     * @param  $css
-     * @param  $js
+     * @param bool|string|array $css
+     * @param bool|string|array $js
      * @return mixed
      */
-    private function handleNormalPage($content, $css, $js): mixed
+    private function handleNormalPage($content, bool|string|array$css, bool|string|array$js): mixed
     {
         //Load the sideboxes
-        $sideboxes        = $this->loadSideboxes();
-        $sideboxes_top    = $this->loadSideboxes('top');
-        $sideboxes_bottom = $this->loadSideboxes('bottom');
+        $sideboxes = $this->loadSideboxes();
+        $sideboxes_side   = $sideboxes['side'] ?? [];
+        $sideboxes_top    = $sideboxes['top'] ?? [];
+        $sideboxes_bottom = $sideboxes['bottom'] ?? [];
         $header           = $this->getHeader($css, $js);
         $modals           = $this->getModals();
 
@@ -282,7 +283,7 @@ class Template
         }
 
         // Gather the theme data
-        $theme_data = array(
+        $theme_data = [
             "currentPage" => $url,
             "url" => $this->page_url,
             "theme_path" => "application/" . $this->theme_path,
@@ -298,10 +299,10 @@ class Template
             "image_path" => $this->image_path,
             "isOnline" => $this->CI->user->isOnline(),
             "isRTL" => $this->CI->language->getLanguage() == 'persian' || $this->CI->language->getClientData() == 'persian',
-            "sideboxes" => $sideboxes,
+            "sideboxes" => $sideboxes_side,
             "sideboxes_top" => $sideboxes_top,
             "sideboxes_bottom" => $sideboxes_bottom
-        );
+        ];
 
         // Load the main template
         return $this->CI->smarty->view($this->theme_path . "template.tpl", $theme_data, true);
@@ -311,13 +312,13 @@ class Template
      * When an ajax request is made to a page, it calls this.
      *
      * @param string $content
-     * @param string $css
-     * @param string $js
+     * @param bool|string|array $css
+     * @param bool|string|array $js
      * @return string
      */
-    private function handleAjaxRequest(string $content = "", string $css = "", string $js = ""): string
+    private function handleAjaxRequest(string $content = "", bool|string|array $css = "", bool|string|array $js = ""): string
     {
-        $array = array(
+        $array = [
             "title" => $this->title . $this->CI->config->item('title'),
             "content" => $content,
             "js" => $js,
@@ -325,7 +326,7 @@ class Template
             "slider" => $this->isSliderShown(),
             "serverName" => $this->CI->config->item('server_name'),
             "language" => $this->CI->language->getClientData()
-        );
+        ];
 
         return json_encode($array);
     }
@@ -370,14 +371,16 @@ class Template
      * @param bool|string $js
      * @return mixed
      */
-    private function getHeader(bool|string $css = false, bool|string $js = false): mixed
+    private function getHeader(bool|string|array $css = false, bool|string|array $js = false): mixed
     {
         header('X-XSS-Protection: 1; mode=block');
         header('X-Frame-Options: SAMEORIGIN');
         header('X-Content-Type-Options: nosniff');
 
+        $menus = $this->getMenu();
+
         // Gather the header data
-        $header_data = array(
+        $header_data = [
             "style_path" => $this->style_path,
             "theme_path" => $this->theme_path,
             "full_theme_path" => $this->page_url . "application/" . $this->theme_path,
@@ -389,11 +392,11 @@ class Template
             "slider_interval" => $this->CI->config->item('slider_interval'),
             "slider_style" => $this->CI->config->item('slider_style'),
             "vote_reminder" => $this->voteReminder(),
-            "keywords" => ($this->custom_keywords) ? $this->custom_keywords : $this->CI->config->item("keywords"),
-            "description" => ($this->custom_description) ? $this->custom_description : $this->CI->config->item("description"),
-            "menu_top" => $this->getMenu("top"),
-            "menu_side" => $this->getMenu("side"),
-            "menu_bottom" => $this->getMenu("bottom"),
+            "keywords" => ($this->custom_keywords) ?? $this->CI->config->item("keywords"),
+            "description" => ($this->custom_description) ?? $this->CI->config->item("description"),
+            "menu_top"    => $menus['top'] ?? [],
+            "menu_side"   => $menus['side'] ?? [],
+            "menu_bottom" => $menus['bottom'] ?? [],
             "path" => base_url() . basename(APPPATH) . '/',
             "favicon" => $this->theme_data['favicon'],
             "minify_js" => !$this->CI->config->item('enable_minify_js'),
@@ -410,15 +413,16 @@ class Template
             "cdn_link" => $this->CI->config->item('cdn') === true ? $this->CI->config->item('cdn_link') : null,
             "isOnline" => $this->CI->user->isOnline(),
             "isRTL" => $this->CI->language->getLanguage() == 'persian' || $this->CI->language->getClientData() == 'persian',
-            "social_media" => array(
+            "social_media" => [
                 'facebook' => $this->CI->config->item('facebook'),
                 'twitter' => $this->CI->config->item('twitter'),
                 'youtube' => $this->CI->config->item('youtube'),
-                'discord' => $this->CI->config->item('discord')
-            ),
+                'discord' => $this->CI->config->item('discord'),
+                'instagram' => $this->CI->config->item('instagram')
+            ],
             "use_captcha" => false,
             "captcha_type" => $this->CI->config->item('captcha_type')
-        );
+        ];
 
         $headerView = "application/" . $this->theme_path . "views/header.tpl";
 
@@ -454,53 +458,51 @@ class Template
     /**
      * Loads the sideboxes, and returns the result
      *
-     * @param string $location
      * @return array
      */
-    public function loadSideboxes(string $location = 'side'): array
+    public function loadSideboxes(): array
     {
-        $out = [];
+        $output = [
+            'side' => [],
+            'top' => [],
+            'bottom' => [],
+        ];
 
-        $sideBoxes_db = $this->CI->cms_model->getSideboxes($location, CI::$APP->router->fetch_module());
+        $module = CI::$APP->router->fetch_module();
 
-        // If we got sideboxes
-        if ($sideBoxes_db)
-        {
-            // Go through them all and add them to the output.
-            foreach ($sideBoxes_db as $sideBox)
-            {
-                if ($sideBox['permission'] && !hasViewPermission($sideBox['permission'], "--SIDEBOX--"))
-                    continue;
+        $allSideboxes = $this->CI->cms_model->getSideboxes($module);
 
-                $fileLocation = 'application/modules/sidebox_' . $sideBox['type'] . '/controllers/' . ucfirst($sideBox['type']) . '.php';
+        foreach ((array) $allSideboxes as $sideBox) {
+            $location = $sideBox['location'] ?? 'side';
 
-                if (file_exists($fileLocation))
-                {
-                    require_once($fileLocation);
-
-                    if ($sideBox['type'] == 'custom')
-                        $object = new $sideBox['type']($sideBox['id']);
-                    else
-                        $object = new $sideBox['type']();
-
-                    $out[] = array(
-                        'name' => langColumn($sideBox['displayName']),
-                        'location' => $sideBox['location'],
-                        'data' => $object->view(),
-                        'type' => $sideBox['type']
-                    );
-                }
-                else
-                {
-                    $out[] = array(
-                        'name' => "Oops, something went wrong",
-                        'data' => 'The following sideBox module is missing or contains an invalid module structure: <b>sidebox_' . $sideBox['type'] . '</b>'
-                    );
-                }
+            if ($sideBox['permission'] && !hasViewPermission($sideBox['permission'], "--SIDEBOX--")) {
+                continue;
             }
+
+            $sideboxType = $sideBox['type'];
+            $fileLocation = APPPATH . 'modules/sidebox_' . $sideboxType . '/controllers/' . ucfirst($sideboxType) . '.php';
+
+            if (!file_exists($fileLocation)) {
+                $output[$location][] = [
+                    'name' => "Oops, something went wrong",
+                    'data' => 'The following sideBox module is missing or contains an invalid module structure: <b>sidebox_' . $sideboxType . '</b>'
+                ];
+                continue;
+            }
+
+            require_once($fileLocation);
+
+            $object = ($sideboxType === 'custom') ? new $sideboxType($sideBox['id']) : new $sideboxType();
+
+            $output[$location][] = [
+                'name'     => langColumn($sideBox['displayName']),
+                'location' => $location,
+                'data'     => $object->view(),
+                'type'     => $sideboxType,
+            ];
         }
 
-        return $out;
+        return $output;
     }
 
     /**
@@ -510,7 +512,7 @@ class Template
      * @param Array $data Array of additional template data
      * @return String
      */
-    public function loadPage(string $page, array $data = array()): string
+    public function loadPage(string $page, array $data = []): string
     {
         // Get the module, we need to check if it's enabled first
         $data['module'] = array_key_exists("module", $data) ? $data['module'] : $this->module_name;
@@ -522,6 +524,7 @@ class Template
         $data['full_theme_path'] = array_key_exists("full_theme_path", $data) ? $data['full_theme_path'] : $this->full_theme_path;
         $data['writable_path']   = array_key_exists("writable_path", $data) ? $data['writable_path'] : $this->writable_path;
         $data['CI']              = array_key_exists("CI", $data) ? $data['CI'] : $this->CI;
+        $data['ucp_menus']       = array_key_exists("ucp_menus", $data) ? $data['ucp_menus'] : $this->getUcpMenu();
 
         // Should we load from the default views or not?
         if ($data['module'] == "default")
@@ -585,18 +588,24 @@ class Template
     /**
      * Get the menu links
      *
-     * @param Int|string $side ID of the specific menu
+     * @return array
      */
-    public function getMenu(int|string $side = "top"): array
+    public function getMenu(): array
     {
-        $result = array();
+        $result = [
+            'top' => [],
+            'side' => [],
+            'bottom' => [],
+        ];
 
         // Get the database values
-        $links = $this->CI->cms_model->getLinks($side);
+        $links = $this->CI->cms_model->getLinks();
         $moduleName = $this->getModuleName();
 
         foreach ($links as $item)
         {
+            $side = $item['type'] ?? 'side';
+
             if ($item['permission'] && !hasViewPermission($item['permission'], "--MENU--"))
                 continue;
 
@@ -605,13 +614,12 @@ class Template
             $item['active'] = false;
 
             // Hard coded PM count
-            if($item['link'] == "messages")
+            if ($item['link'] == "messages")
             {
                 $count = $this->CI->cms_model->getMessagesCount();
-
-                if($count > 0)
+                if ($count > 0)
                 {
-                    $item['name'] .= " <b>(".$count.")</b>";
+                    $item['name'] .= " <b>(" . $count . ")</b>";
                 }
             }
 
@@ -621,12 +629,9 @@ class Template
                 {
                     $item['active'] = true;
                 }
-                elseif ($moduleName == "page")
+                elseif ($moduleName == "page" && ($moduleName . "/" . $this->custom_page == $item['link']))
                 {
-                    if ($moduleName . "/" . $this->custom_page == $item['link'])
-                    {
-                        $item['active'] = true;
-                    }
+                    $item['active'] = true;
                 }
 
                 $item['link'] = $this->page_url . $item['link'];
@@ -635,7 +640,7 @@ class Template
             // Append if it's a direct link or not
             $item['link'] = 'href="' . $item['link'] . '"';
 
-            $result[] = $item;
+            $result[$side][] = $item;
         }
 
         return $result;
@@ -882,5 +887,45 @@ class Template
     public function setCustomPage($page): void
     {
         $this->custom_page = $page;
+    }
+
+    /**
+     * Get the ucp menus
+     * @return array
+     */
+    private function getUcpMenu(): array
+    {
+        $cache = $this->CI->cache->get("ucp_menu");
+
+        if ($cache !== false) {
+            return $cache;
+        } else {
+            $menus = $this->CI->cms_model->getUcpMenu();
+
+            $groupedMenus = [];
+            foreach ($menus as &$menu) {
+                $menu['name'] = $this->format(langColumn($menu['name']), false, false);
+                $menu['description'] = $this->format(langColumn($menu['description']), false, false);
+
+                // Add the website path if internal link
+                if (!preg_match("/https?:\/\//", $menu['link'])) {
+                    $menu['link'] = $this->page_url . $menu['link'];
+                }
+
+                if ($menu['permission'] == 'securityAccount') {
+                    if ($this->CI->config->item('totp_secret')) {
+                        $groupedMenus[$menu['group']][] = $menu;
+                    }
+                    continue;
+                }
+
+                if (hasPermission($menu['permission'], $menu['permissionModule']))
+                    $groupedMenus[$menu['group']][] = $menu;
+            }
+
+            $this->CI->cache->save('ucp_menu', $groupedMenus, 86400); // 1 day
+
+            return $groupedMenus;
+        }
     }
 }

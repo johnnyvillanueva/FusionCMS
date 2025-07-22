@@ -43,7 +43,7 @@ class levelup extends MX_Controller
     {
         $this->init();
 
-        $this->template->setTitle("Character LevelUp");
+        $this->template->setTitle(lang("char_levelup", "levelup"));
 
         clientLang('cant_afford', 'levelup');
         clientLang('purchase', 'levelup');
@@ -69,7 +69,10 @@ class levelup extends MX_Controller
         //Load the page
         $page_data = array(
             "module" => "default",
-            "headline" => "Character LevelUp",
+            "headline" => breadcrumb([
+                "ucp" => lang("ucp"),
+                "levelup" => lang("char_levelup", "levelup")
+            ]),
             "content" => $page_content
         );
 
@@ -126,6 +129,8 @@ class levelup extends MX_Controller
                 if ($price > 0) {
                     $this->user->setDp($this->user->getDp() - $price);
                 }
+
+                $this->dblogger->createLog("user", "service", "Level Up", $CharacterName, Dblogger::STATUS_SUCCEED, $this->user->getId());
 
                 //Successful
                 die(lang("successfully", "levelup"));

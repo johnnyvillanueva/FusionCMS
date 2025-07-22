@@ -1,7 +1,12 @@
 <?php
 
+use CodeIgniter\Events\Events;
 use MX\MX_Controller;
 
+/**
+ * Settings Controller Class
+ * @property settings_model $settings_model settings_model Class
+ */
 class Settings extends MX_Controller
 {
     public function __construct()
@@ -37,7 +42,7 @@ class Settings extends MX_Controller
             'userLanguage' => $this->language->getLanguage(),
             "avatar" => $this->user->getAvatar($this->user->getId()),
 
-            "config" => array(
+            "config" => [
                 "vote" => $this->config->item('ucp_vote'),
                 "donate" => $this->config->item('ucp_donate'),
                 "store" => $this->config->item('ucp_store'),
@@ -46,21 +51,21 @@ class Settings extends MX_Controller
                 "teleport" => $this->config->item('ucp_teleport'),
                 "admin" => $this->config->item('ucp_admin'),
                 "gm" => $this->config->item('ucp_mod')
-            )
+            ]
         );
 
         if ($this->config->item('show_language_chooser')) {
             $settings_data['languages'] = $this->language->getAllLanguages();
         }
 
-        $data = array(
+        $data = [
             "module" => "default",
             "headline" => breadcrumb([
                             "ucp" => lang("ucp"),
                             "ucp/settings" => lang("settings", "ucp")
             ]),
             "content" => $this->template->loadPage("settings.tpl", $settings_data)
-        );
+        ];
 
         $page = $this->template->loadPage("page.tpl", $data);
 
@@ -119,7 +124,7 @@ class Settings extends MX_Controller
             } else {
                 $this->user->setLanguage($values['language']);
 
-                $this->plugins->onSetLanguage($this->user->getId(), $values['language']);
+                Events::trigger('onSetLanguage', $this->user->getId(), $values['language']);
             }
         }
 
@@ -142,7 +147,7 @@ class Settings extends MX_Controller
 
         $this->settings_model->saveSettings($values);
 
-        $this->plugins->onSaveSettings($this->user->getId(), $values);
+        Events::trigger('onSaveSettingsAccount', $this->user->getId(), $values);
 
         die("1");
     }

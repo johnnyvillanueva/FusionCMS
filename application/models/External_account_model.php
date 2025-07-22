@@ -2,6 +2,9 @@
 
 use App\Config\Services;
 use CodeIgniter\Database\BaseConnection;
+use CodeIgniter\Database\BaseResult;
+use CodeIgniter\Database\Query;
+use CodeIgniter\Events\Events;
 use MX\CI;
 
 /**
@@ -15,39 +18,29 @@ use MX\CI;
 class External_account_model extends CI_Model
 {
     private BaseConnection $connection;
-    private $id;
-    private $username;
-    private $password;
-    private $email;
-    private $joindate;
-    private $last_ip;
-    private $last_login;
-    private $expansion;
-    private $account_cache;
-    private $totp_secret;
+    private int $id;
+    private string $username;
+    private string $password;
+    private string $email;
+    private string $joindate;
+    private string $last_ip;
+    private string $last_login;
+    private int $expansion;
+    private array $account_cache;
+    private string $totp_secret;
 
     public function __construct()
     {
         parent::__construct();
 
-        $this->account_cache = [];
+        $this->noUserExists();
 
         if ($this->user->getOnline()) {
             $this->initialize();
-        } else {
-            $this->id = 0;
-            $this->username = "Guest";
-            $this->password = "";
-            $this->email = "";
-            $this->joindate =  "";
-            $this->expansion = 0;
-            $this->last_ip =  "";
-            $this->last_login = "";
-            $this->totp_secret = "";
         }
     }
 
-    public function getConnection()
+    public function getConnection(): BaseConnection
     {
         $this->connect();
 
@@ -61,75 +54,103 @@ class External_account_model extends CI_Model
         }
     }
 
-    public function initialize($where = false)
+    public function initialize($where = false): bool
     {
         $this->connect();
 
         $encryption = $this->config->item('account_encryption');
         $totp_secret_name = $this->config->item('totp_secret_name');
 
-        if (preg_match("/^cmangos/i", get_class($this->realms->getEmulator()))) {
-            if (!$where) {
-                $query = $this->connection->query(query('get_account_id'), [Services::session()->get('uid')]);
-            } else {
-                $query = $this->connection->query(query('get_account'), [$where]);
-            }
-        } else {
-            $columns = CI::$APP->realms->getEmulator()->getAllColumns(table('account'));
-
-            if ($encryption == 'SPH') {
-                if (column('account', 'verifier') && column('account', 'salt')){
-                    unset($columns[column('account', 'verifier')]);
-                    unset($columns[column('account', 'salt')]);
-                }
-            } elseif ($encryption == 'SRP6' || $encryption == 'SRP') {
-                if (column('account', 'sha_pass_hash')){
-                    unset($columns[column('account', 'sha_pass_hash')]);
-                }
-            }
-
-            if ($this->config->item('totp_secret')) {
-                $columns['totp_secret'] = $totp_secret_name == 'totp_secret' ? 'totp_secret' : 'token_key';
-            }
-
-            if (!$where) {
-                $query = $this->connection->query('SELECT ' . formatColumns($columns) . ' FROM ' . table('account') . ' WHERE ' . column('account', 'id') . ' = ?', [Services::session()->get('uid')]);
-            } else {
-                $query = $this->connection->query('SELECT ' . formatColumns($columns) . ' FROM ' . table('account') . ' WHERE ' . column('account', 'username') . ' = ?', [$where]);
-            }
-        }
+        $query = $this->fetchAccountData($encryption, $totp_secret_name, $where);
 
         if (!$query)
             show_error('Database Error occurs: ' . $this->connection->error()['message'] . "<br/>Please check website database `realms.emulator` in 'field list' <b>(make sure you selected right emulator.)</b>");
 
-        if ($query->getNumRows() > 0) {
-            $result = $query->getResultArray();
-            $result = $result[0];
+        return $this->populateAccountData($query);
+    }
 
+    private function fetchAccountData($encryption, $totp_secret_name, $where): bool|BaseResult|Query
+    {
+        if (preg_match("/^cmangos/i", get_class($this->realms->getEmulator()))) {
+            return !$where
+                ? $this->connection->query(query('get_account_id'), [Services::session()->get('uid')])
+                : $this->connection->query(query('get_account'), [$where]);
+        }
+
+        $columns = CI::$APP->realms->getEmulator()->getAllColumns(table('account'));
+        $columns = $this->removeExtraColumnsForEncryption($columns, $encryption);
+
+        if ($this->config->item('totp_secret')) {
+            $columns['totp_secret'] = $totp_secret_name == 'totp_secret' ? 'totp_secret' : 'token_key';
+        }
+
+        $columnList = formatColumns($columns);
+        $conditionColumn = !$where ? column('account', 'id') : column('account', 'username');
+        $conditionValue = !$where ? Services::session()->get('uid') : $where;
+
+        return $this->connection->query("SELECT $columnList FROM " . table('account') . " WHERE $conditionColumn = ?", [$conditionValue]);
+    }
+
+    private function removeExtraColumnsForEncryption($columns, $encryption)
+    {
+        switch ($encryption) {
+            case 'SPH':
+                if (column('account', 'verifier') && column('account', 'salt')){
+                    unset($columns[column('account', 'verifier')]);
+                    unset($columns[column('account', 'salt')]);
+                }
+                break;
+            case 'SRP':
+                if (column('account', 'sha_pass_hash')){
+                    unset($columns[column('account', 'sha_pass_hash')]);
+                }
+                break;
+            case 'SRP6':
+                if (column('account', 'sha_pass_hash')){
+                    unset($columns[column('account', 'sha_pass_hash')]);
+                }
+                if (column('account', 'v') && column('account', 's')){
+                    unset($columns[column('account', 'v')]);
+                    unset($columns[column('account', 's')]);
+                }
+                break;
+        }
+        return $columns;
+    }
+
+    private function populateAccountData($query): bool
+    {
+        if ($query->getNumRows() > 0) {
+            $result = $query->getRowArray();
             $this->id = $result['id'];
             $this->username = $result['username'];
-            $this->password = $encryption == 'SPH' ? $result['sha_pass_hash'] : $result['verifier'];
+            $this->password = $result['verifier'] ?? $result['sha_pass_hash'];
             $this->email = $result['email'];
             $this->joindate = $result['joindate'];
             $this->expansion = $result['expansion'];
-            $this->last_ip = $result['last_ip'];
-            $this->last_login = $result['last_login'];
+            $this->last_ip = $result['last_ip'] ?? '';
+            $this->last_login = $result['last_login'] ?? '';
             $this->totp_secret = $result['totp_secret'] ?? '';
-
             return true;
-        } else {
-            $this->id = 0;
-            $this->username = 'Guest';
-            $this->password = '';
-            $this->email = '';
-            $this->joindate =  '';
-            $this->expansion = 0;
-            $this->last_ip =  '';
-            $this->last_login = '';
-            $this->totp_secret = '';
-
-            return false;
         }
+
+        $this->noUserExists();
+
+        return false;
+    }
+
+    private function noUserExists(): void
+    {
+        $this->account_cache = [];
+        $this->id = 0;
+        $this->username = 'Guest';
+        $this->password = '';
+        $this->email = '';
+        $this->joindate = '';
+        $this->expansion = 0;
+        $this->last_ip = '';
+        $this->last_login = '';
+        $this->totp_secret = '';
     }
 
     /**
@@ -404,7 +425,7 @@ class External_account_model extends CI_Model
             $builder->update($battleData);
         }
 
-        CI::$APP->plugins->onChangePassword($userId, $hash);
+        Events::trigger('onChangePassword', $userId, $hash);
     }
 
     public function setEmail($username, $newEmail)
@@ -605,22 +626,27 @@ class External_account_model extends CI_Model
         }
     }
 
-    public function getJoinDate()
+    public function getJoinDate(): string
     {
         return $this->joindate;
     }
 
-    public function getLastIp()
+    public function getLastIp(): string
     {
         return $this->last_ip;
     }
 
-    public function getExpansion()
+    public function getLastLogin(): string
+    {
+        return $this->last_login;
+    }
+
+    public function getExpansion(): int
     {
         return $this->expansion;
     }
 
-    public function getTotpSecret()
+    public function getTotpSecret(): string
     {
         return $this->totp_secret;
     }

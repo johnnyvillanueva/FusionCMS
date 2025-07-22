@@ -4,34 +4,37 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "e3fc34df4d4bf0c8316a90cad3fbc6a8",
+    "content-hash": "75d06b1761308639d26ac07027329118",
     "packages": [
         {
             "name": "chillerlan/php-qrcode",
-            "version": "5.0.2",
+            "version": "5.0.3",
             "source": {
                 "type": "git",
                 "url": "https://github.com/chillerlan/php-qrcode.git",
-                "reference": "da5bdb82c8755f54de112b271b402aaa8df53269"
+                "reference": "42e215640e9ebdd857570c9e4e52245d1ee51de2"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/chillerlan/php-qrcode/zipball/da5bdb82c8755f54de112b271b402aaa8df53269",
-                "reference": "da5bdb82c8755f54de112b271b402aaa8df53269",
+                "url": "https://api.github.com/repos/chillerlan/php-qrcode/zipball/42e215640e9ebdd857570c9e4e52245d1ee51de2",
+                "reference": "42e215640e9ebdd857570c9e4e52245d1ee51de2",
                 "shasum": ""
             },
             "require": {
-                "chillerlan/php-settings-container": "^2.1.4 || ^3.1",
+                "chillerlan/php-settings-container": "^2.1.6 || ^3.2.1",
                 "ext-mbstring": "*",
                 "php": "^7.4 || ^8.0"
             },
             "require-dev": {
-                "chillerlan/php-authenticator": "^4.1 || ^5.1",
-                "phan/phan": "^5.4",
+                "chillerlan/php-authenticator": "^4.3.1 || ^5.2.1",
+                "ext-fileinfo": "*",
+                "phan/phan": "^5.4.5",
+                "phpcompatibility/php-compatibility": "10.x-dev",
                 "phpmd/phpmd": "^2.15",
                 "phpunit/phpunit": "^9.6",
                 "setasign/fpdf": "^1.8.2",
-                "squizlabs/php_codesniffer": "^3.8"
+                "slevomat/coding-standard": "^8.15",
+                "squizlabs/php_codesniffer": "^3.11"
             },
             "suggest": {
                 "chillerlan/php-authenticator": "Yet another Google authenticator! Also creates URIs for mobile apps.",
@@ -41,7 +44,7 @@
             "type": "library",
             "autoload": {
                 "psr-4": {
-                    "chillerlan\\QRCode\\": "src/"
+                    "chillerlan\\QRCode\\": "src"
                 }
             },
             "notification-url": "https://packagist.org/downloads/",
@@ -72,7 +75,7 @@
                     "homepage": "https://github.com/chillerlan/php-qrcode/graphs/contributors"
                 }
             ],
-            "description": "A QR code generator and reader with a user friendly API. PHP 7.4+",
+            "description": "A QR Code generator and reader with a user-friendly API. PHP 7.4+",
             "homepage": "https://github.com/chillerlan/php-qrcode",
             "keywords": [
                 "phpqrcode",
@@ -90,15 +93,11 @@
             },
             "funding": [
                 {
-                    "url": "https://www.paypal.com/donate?hosted_button_id=WLYUNAT9ZTJZ4",
-                    "type": "custom"
-                },
-                {
                     "url": "https://ko-fi.com/codemasher",
-                    "type": "ko_fi"
+                    "type": "Ko-Fi"
                 }
             ],
-            "time": "2024-02-27T14:37:26+00:00"
+            "time": "2024-11-21T16:12:34+00:00"
         },
         {
             "name": "chillerlan/php-settings-container",
@@ -168,24 +167,24 @@
         },
         {
             "name": "composer/semver",
-            "version": "3.4.2",
+            "version": "3.4.3",
             "source": {
                 "type": "git",
                 "url": "https://github.com/composer/semver.git",
-                "reference": "c51258e759afdb17f1fd1fe83bc12baaef6309d6"
+                "reference": "4313d26ada5e0c4edfbd1dc481a92ff7bff91f12"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/composer/semver/zipball/c51258e759afdb17f1fd1fe83bc12baaef6309d6",
-                "reference": "c51258e759afdb17f1fd1fe83bc12baaef6309d6",
+                "url": "https://api.github.com/repos/composer/semver/zipball/4313d26ada5e0c4edfbd1dc481a92ff7bff91f12",
+                "reference": "4313d26ada5e0c4edfbd1dc481a92ff7bff91f12",
                 "shasum": ""
             },
             "require": {
                 "php": "^5.3.2 || ^7.0 || ^8.0"
             },
             "require-dev": {
-                "phpstan/phpstan": "^1.4",
-                "symfony/phpunit-bridge": "^4.2 || ^5"
+                "phpstan/phpstan": "^1.11",
+                "symfony/phpunit-bridge": "^3 || ^7"
             },
             "type": "library",
             "extra": {
@@ -229,7 +228,7 @@
             "support": {
                 "irc": "ircs://irc.libera.chat:6697/composer",
                 "issues": "https://github.com/composer/semver/issues",
-                "source": "https://github.com/composer/semver/tree/3.4.2"
+                "source": "https://github.com/composer/semver/tree/3.4.3"
             },
             "funding": [
                 {
@@ -245,7 +244,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2024-07-12T11:35:52+00:00"
+            "time": "2024-09-19T14:15:21+00:00"
         },
         {
             "name": "desarrolla2/cache",
@@ -324,20 +323,20 @@
         },
         {
             "name": "ezyang/htmlpurifier",
-            "version": "v4.17.0",
+            "version": "v4.18.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/ezyang/htmlpurifier.git",
-                "reference": "bbc513d79acf6691fa9cf10f192c90dd2957f18c"
+                "reference": "cb56001e54359df7ae76dc522d08845dc741621b"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/ezyang/htmlpurifier/zipball/bbc513d79acf6691fa9cf10f192c90dd2957f18c",
-                "reference": "bbc513d79acf6691fa9cf10f192c90dd2957f18c",
+                "url": "https://api.github.com/repos/ezyang/htmlpurifier/zipball/cb56001e54359df7ae76dc522d08845dc741621b",
+                "reference": "cb56001e54359df7ae76dc522d08845dc741621b",
                 "shasum": ""
             },
             "require": {
-                "php": "~5.6.0 || ~7.0.0 || ~7.1.0 || ~7.2.0 || ~7.3.0 || ~7.4.0 || ~8.0.0 || ~8.1.0 || ~8.2.0 || ~8.3.0"
+                "php": "~5.6.0 || ~7.0.0 || ~7.1.0 || ~7.2.0 || ~7.3.0 || ~7.4.0 || ~8.0.0 || ~8.1.0 || ~8.2.0 || ~8.3.0 || ~8.4.0"
             },
             "require-dev": {
                 "cerdic/css-tidy": "^1.7 || ^2.0",
@@ -379,9 +378,9 @@
             ],
             "support": {
                 "issues": "https://github.com/ezyang/htmlpurifier/issues",
-                "source": "https://github.com/ezyang/htmlpurifier/tree/v4.17.0"
+                "source": "https://github.com/ezyang/htmlpurifier/tree/v4.18.0"
             },
-            "time": "2023-11-17T15:01:25+00:00"
+            "time": "2024-11-01T03:51:45+00:00"
         },
         {
             "name": "fusion-cms/auto-updater",
@@ -539,27 +538,26 @@
         },
         {
             "name": "kint-php/kint",
-            "version": "5.1.1",
+            "version": "6.0.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/kint-php/kint.git",
-                "reference": "8c5ec370c3382ceae0b88e91f9bbb00e6bb4f93b"
+                "reference": "2bd133be30a0d4f5523e3d7d8e94b788d95978e6"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/kint-php/kint/zipball/8c5ec370c3382ceae0b88e91f9bbb00e6bb4f93b",
-                "reference": "8c5ec370c3382ceae0b88e91f9bbb00e6bb4f93b",
+                "url": "https://api.github.com/repos/kint-php/kint/zipball/2bd133be30a0d4f5523e3d7d8e94b788d95978e6",
+                "reference": "2bd133be30a0d4f5523e3d7d8e94b788d95978e6",
                 "shasum": ""
             },
             "require": {
-                "php": ">=7.1"
+                "php": ">=7.4"
             },
             "require-dev": {
                 "friendsofphp/php-cs-fixer": "^3",
-                "phpspec/prophecy-phpunit": "^2",
                 "phpunit/phpunit": "^9",
                 "seld/phar-utils": "^1",
-                "symfony/finder": ">=4.0",
+                "symfony/finder": ">=7",
                 "vimeo/psalm": "^5"
             },
             "suggest": {
@@ -589,48 +587,46 @@
                     "homepage": "https://github.com/kint-php/kint/graphs/contributors"
                 }
             ],
-            "description": "Kint - debugging tool for PHP developers",
+            "description": "Kint - Advanced PHP dumper",
             "homepage": "https://kint-php.github.io/kint/",
             "keywords": [
                 "debug",
-                "kint",
-                "php"
+                "dump"
             ],
             "support": {
                 "issues": "https://github.com/kint-php/kint/issues",
-                "source": "https://github.com/kint-php/kint/tree/5.1.1"
+                "source": "https://github.com/kint-php/kint/tree/6.0.1"
             },
-            "time": "2024-04-26T14:20:09+00:00"
+            "time": "2025-01-01T23:10:26+00:00"
         },
         {
             "name": "laminas/laminas-escaper",
-            "version": "2.13.0",
+            "version": "2.17.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/laminas/laminas-escaper.git",
-                "reference": "af459883f4018d0f8a0c69c7a209daef3bf973ba"
+                "reference": "df1ef9503299a8e3920079a16263b578eaf7c3ba"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/laminas/laminas-escaper/zipball/af459883f4018d0f8a0c69c7a209daef3bf973ba",
-                "reference": "af459883f4018d0f8a0c69c7a209daef3bf973ba",
+                "url": "https://api.github.com/repos/laminas/laminas-escaper/zipball/df1ef9503299a8e3920079a16263b578eaf7c3ba",
+                "reference": "df1ef9503299a8e3920079a16263b578eaf7c3ba",
                 "shasum": ""
             },
             "require": {
                 "ext-ctype": "*",
                 "ext-mbstring": "*",
-                "php": "~8.1.0 || ~8.2.0 || ~8.3.0"
+                "php": "~8.1.0 || ~8.2.0 || ~8.3.0 || ~8.4.0"
             },
             "conflict": {
                 "zendframework/zend-escaper": "*"
             },
             "require-dev": {
-                "infection/infection": "^0.27.0",
-                "laminas/laminas-coding-standard": "~2.5.0",
-                "maglnet/composer-require-checker": "^3.8.0",
-                "phpunit/phpunit": "^9.6.7",
-                "psalm/plugin-phpunit": "^0.18.4",
-                "vimeo/psalm": "^5.9"
+                "infection/infection": "^0.29.8",
+                "laminas/laminas-coding-standard": "~3.0.1",
+                "phpunit/phpunit": "^10.5.45",
+                "psalm/plugin-phpunit": "^0.19.2",
+                "vimeo/psalm": "^6.6.2"
             },
             "type": "library",
             "autoload": {
@@ -662,20 +658,20 @@
                     "type": "community_bridge"
                 }
             ],
-            "time": "2023-10-10T08:35:13+00:00"
+            "time": "2025-05-06T19:29:36+00:00"
         },
         {
             "name": "matthiasmullie/minify",
-            "version": "1.3.73",
+            "version": "1.3.75",
             "source": {
                 "type": "git",
                 "url": "https://github.com/matthiasmullie/minify.git",
-                "reference": "cb7a9297b4ab070909cefade30ee95054d4ae87a"
+                "reference": "76ba4a5f555fd7bf4aa408af608e991569076671"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/matthiasmullie/minify/zipball/cb7a9297b4ab070909cefade30ee95054d4ae87a",
-                "reference": "cb7a9297b4ab070909cefade30ee95054d4ae87a",
+                "url": "https://api.github.com/repos/matthiasmullie/minify/zipball/76ba4a5f555fd7bf4aa408af608e991569076671",
+                "reference": "76ba4a5f555fd7bf4aa408af608e991569076671",
                 "shasum": ""
             },
             "require": {
@@ -686,8 +682,7 @@
             "require-dev": {
                 "friendsofphp/php-cs-fixer": ">=2.0",
                 "matthiasmullie/scrapbook": ">=1.3",
-                "phpunit/phpunit": ">=4.8",
-                "squizlabs/php_codesniffer": ">=3.0"
+                "phpunit/phpunit": ">=4.8"
             },
             "suggest": {
                 "psr/cache-implementation": "Cache implementation to use with Minify::cache"
@@ -725,7 +720,7 @@
             ],
             "support": {
                 "issues": "https://github.com/matthiasmullie/minify/issues",
-                "source": "https://github.com/matthiasmullie/minify/tree/1.3.73"
+                "source": "https://github.com/matthiasmullie/minify/tree/1.3.75"
             },
             "funding": [
                 {
@@ -733,7 +728,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2024-03-15T10:27:10+00:00"
+            "time": "2025-06-25T09:56:19+00:00"
         },
         {
             "name": "matthiasmullie/path-converter",
@@ -790,16 +785,16 @@
         },
         {
             "name": "monolog/monolog",
-            "version": "2.9.3",
+            "version": "2.10.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/Seldaek/monolog.git",
-                "reference": "a30bfe2e142720dfa990d0a7e573997f5d884215"
+                "reference": "5cf826f2991858b54d5c3809bee745560a1042a7"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/Seldaek/monolog/zipball/a30bfe2e142720dfa990d0a7e573997f5d884215",
-                "reference": "a30bfe2e142720dfa990d0a7e573997f5d884215",
+                "url": "https://api.github.com/repos/Seldaek/monolog/zipball/5cf826f2991858b54d5c3809bee745560a1042a7",
+                "reference": "5cf826f2991858b54d5c3809bee745560a1042a7",
                 "shasum": ""
             },
             "require": {
@@ -876,7 +871,7 @@
             ],
             "support": {
                 "issues": "https://github.com/Seldaek/monolog/issues",
-                "source": "https://github.com/Seldaek/monolog/tree/2.9.3"
+                "source": "https://github.com/Seldaek/monolog/tree/2.10.0"
             },
             "funding": [
                 {
@@ -888,7 +883,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2024-04-12T20:52:51+00:00"
+            "time": "2024-11-12T12:43:37+00:00"
         },
         {
             "name": "psr/log",
@@ -993,16 +988,16 @@
         },
         {
             "name": "smarty/smarty",
-            "version": "v5.3.1",
+            "version": "v5.5.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/smarty-php/smarty.git",
-                "reference": "3cb35854326a94120cd415b81db28c53d95d0d5d"
+                "reference": "cbcd66e1de017ae3bcbf8b5fa2a34858f5e2adbc"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/smarty-php/smarty/zipball/3cb35854326a94120cd415b81db28c53d95d0d5d",
-                "reference": "3cb35854326a94120cd415b81db28c53d95d0d5d",
+                "url": "https://api.github.com/repos/smarty-php/smarty/zipball/cbcd66e1de017ae3bcbf8b5fa2a34858f5e2adbc",
+                "reference": "cbcd66e1de017ae3bcbf8b5fa2a34858f5e2adbc",
                 "shasum": ""
             },
             "require": {
@@ -1057,26 +1052,33 @@
             "support": {
                 "forum": "https://github.com/smarty-php/smarty/discussions",
                 "issues": "https://github.com/smarty-php/smarty/issues",
-                "source": "https://github.com/smarty-php/smarty/tree/v5.3.1"
+                "source": "https://github.com/smarty-php/smarty/tree/v5.5.1"
             },
-            "time": "2024-06-16T19:51:13+00:00"
+            "funding": [
+                {
+                    "url": "https://github.com/wisskid",
+                    "type": "github"
+                }
+            ],
+            "time": "2025-05-19T09:29:42+00:00"
         },
         {
             "name": "symfony/polyfill-mbstring",
-            "version": "v1.30.0",
+            "version": "v1.32.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/polyfill-mbstring.git",
-                "reference": "fd22ab50000ef01661e2a31d850ebaa297f8e03c"
+                "reference": "6d857f4d76bd4b343eac26d6b539585d2bc56493"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/fd22ab50000ef01661e2a31d850ebaa297f8e03c",
-                "reference": "fd22ab50000ef01661e2a31d850ebaa297f8e03c",
+                "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/6d857f4d76bd4b343eac26d6b539585d2bc56493",
+                "reference": "6d857f4d76bd4b343eac26d6b539585d2bc56493",
                 "shasum": ""
             },
             "require": {
-                "php": ">=7.1"
+                "ext-iconv": "*",
+                "php": ">=7.2"
             },
             "provide": {
                 "ext-mbstring": "*"
@@ -1087,8 +1089,8 @@
             "type": "library",
             "extra": {
                 "thanks": {
-                    "name": "symfony/polyfill",
-                    "url": "https://github.com/symfony/polyfill"
+                    "url": "https://github.com/symfony/polyfill",
+                    "name": "symfony/polyfill"
                 }
             },
             "autoload": {
@@ -1123,7 +1125,7 @@
                 "shim"
             ],
             "support": {
-                "source": "https://github.com/symfony/polyfill-mbstring/tree/v1.30.0"
+                "source": "https://github.com/symfony/polyfill-mbstring/tree/v1.32.0"
             },
             "funding": [
                 {
@@ -1139,7 +1141,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2024-06-19T12:30:46+00:00"
+            "time": "2024-12-23T08:48:59+00:00"
         }
     ],
     "packages-dev": [],
@@ -1165,5 +1167,5 @@
         "ext-intl": "*"
     },
     "platform-dev": [],
-    "plugin-api-version": "2.6.0"
+    "plugin-api-version": "2.3.0"
 }

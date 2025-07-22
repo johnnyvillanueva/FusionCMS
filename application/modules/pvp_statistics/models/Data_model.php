@@ -10,8 +10,6 @@ class Data_model extends CI_Model
 
     public function GetStatement($key): false|string
     {
-        $statements = [];
-
         if (!$this->emuStr) {
             return false;
         }
@@ -50,7 +48,8 @@ class Data_model extends CI_Model
             default:
             {
                 $statements = [
-                    'TopArenaTeams' => "SELECT `arenaTeamId` AS arenateamid, `rating`, `rank`, `name`, `captainGuid` AS captain, `type` FROM `arena_team` WHERE `type` = ? ORDER BY rating DESC LIMIT ?;",
+                    'TopArenaTeams' => "SELECT `arenaTeamId` AS arenateamid, `rating`, `rank`, `arena_team`.`name`, `captainGuid` AS captain, `seasonWins`, `type`, `characters`.`race` AS race FROM `arena_team` RIGHT JOIN `characters` ON `characters`.`guid` = `arena_team`.`captainGuid` WHERE `type` = ? ORDER BY rating DESC LIMIT ?;",
+
                     'TeamMembers' => "SELECT 
                                     `arena_team_member`.`arenaTeamId` AS arenateamid, 
                                     `arena_team_member`.`guid` AS guid, 
@@ -79,13 +78,7 @@ class Data_model extends CI_Model
     {
         $this->realm = $this->realms->getRealm($id);
 
-        $replace = [
-            '_sph',
-            '_soap',
-            '_rbac'
-        ];
-        //Remove the sph/soap/rbac
-        $this->emuStr = str_replace($replace, '', $this->realm->getConfig('emulator'));
+        $this->emuStr = $this->realm->getConfig('emulator');
     }
 
     /**
@@ -101,7 +94,7 @@ class Data_model extends CI_Model
      *            TOP ARENA FUNCTIONS
      ***************************************/
 
-    public function getTeams(int $count = 5, int $type = 2)
+    public function getTeams(int $count = 5, int $type = 2): array|bool
     {
         $this->connect();
 
@@ -126,7 +119,7 @@ class Data_model extends CI_Model
         return false;
     }
 
-    public function getTeamMembers($team)
+    public function getTeamMembers($team): array|bool
     {
         $this->connect();
 
@@ -140,7 +133,7 @@ class Data_model extends CI_Model
         return false;
     }
 
-    public function getTopHKPlayers(int $count = 10)
+    public function getTopHKPlayers(int $count = 10): array|bool
     {
         $this->connect();
 

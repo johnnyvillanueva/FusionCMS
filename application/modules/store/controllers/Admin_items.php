@@ -1,6 +1,7 @@
 <?php
 
 use App\Config\Services;
+use CodeIgniter\Events\Events;
 use MX\MX_Controller;
 
 // todo: NO PERMISSIONS!
@@ -76,6 +77,7 @@ class Admin_items extends MX_Controller
         requirePermission("canAddGroups");
 
         $data["title"] = $this->input->post("title");
+        $data["icon"] = $this->input->post("icon");
         $data["orderNumber"] = $this->input->post("order");
 
         if (!$data['title']) {
@@ -89,7 +91,7 @@ class Admin_items extends MX_Controller
         // Add log
         $this->dblogger->createLog("admin", "add", "Added item group", ['Group' => $data['title']]);
 
-        $this->plugins->onCreateGroup($data['title']);
+        Events::trigger('onCreateGroupStore', $data['title']);
 
         die('yes');
     }
@@ -104,10 +106,10 @@ class Admin_items extends MX_Controller
 
         $group = $this->items_model->getGroup($id);
 
-        $data = array(
+        $data = [
             'url' => $this->template->page_url,
             'group' => $group,
-        );
+        ];
 
         // Load my view
         $output = $this->template->loadPage("admin_edit_group.tpl", $data);
@@ -127,11 +129,11 @@ class Admin_items extends MX_Controller
         // Change the title
         $this->administrator->setTitle("Add item");
 
-        $data = array(
+        $data = [
             'url' => $this->template->page_url,
             'groups' => $this->items_model->getGroups(),
             'realms' => $this->realms->getRealms()
-        );
+        ];
 
         // Load my view
         $output = $this->template->loadPage("admin_add_item.tpl", $data);
@@ -168,7 +170,7 @@ class Admin_items extends MX_Controller
         // Add log
         $this->dblogger->createLog("admin", "add", "Item added", ['Item' => $data['name']]);
 
-        $this->plugins->onAddItem($data);
+        Events::trigger('onAddItemStore', $data);
 
         die('yes');
     }
@@ -354,7 +356,7 @@ class Admin_items extends MX_Controller
         // Add log
 		$this->dblogger->createLog("admin", "edit", "Edited item", ['Item' => $data['name']]);
 
-        $this->plugins->onEditItem($id, $data);
+        Events::trigger('onEditItemStore', $id, $data);
 
         die('yes');
     }
@@ -389,7 +391,7 @@ class Admin_items extends MX_Controller
         // Add log
         $this->dblogger->createLog("admin", "edit", "Edited item group", ['ID' => $id, 'Group' => $data["title"]]);
 
-        $this->plugins->onEditGroup($id);
+        Events::trigger('onEditGroupStore', $id);
 
         $this->cache->delete('store_items.cache');
         die('yes');
@@ -409,7 +411,7 @@ class Admin_items extends MX_Controller
         // Add log
         $this->dblogger->createLog("admin", "delete", "Deleted item", ['ID' => $id]);
 
-        $this->plugins->onDeleteItem($id);
+        Events::trigger('onDeleteItemStore', $id);
 
         $this->cache->delete('store_items');
     }
@@ -427,7 +429,7 @@ class Admin_items extends MX_Controller
         // Add log
         $this->dblogger->createLog("admin", "delete", "Deleted item group", ['ID' => $id]);
 
-        $this->plugins->onDeleteGroup($id);
+        Events::trigger('onDeleteGroupStore', $id);
 
         $this->cache->delete('store_items');
     }

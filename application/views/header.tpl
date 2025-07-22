@@ -31,20 +31,21 @@
 
 		<!-- Header CSS.Start -->
 		<link rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v6.6.0/css/all.css" />
-		{minify files=array("application/css/default.css", "application/css/tooltip.css", "node_modules/bootstrap/dist/css/bootstrap.min.css", "node_modules/sweetalert2/dist/sweetalert2.min.css", "node_modules/owl.carousel/dist/assets/owl.carousel.min.css", "node_modules/owl.carousel/dist/assets/owl.theme.default.min.css", "{$full_theme_path}css/cms.css", "{$full_theme_path}css/main.css") type='css' output='writable/cache/data/minify/all.min.css' disable={$minify_css}}
+		{minify files=array("application/css/default.css", "application/css/tooltip.css", "node_modules/bootstrap/dist/css/bootstrap.min.css", "node_modules/sweetalert2/dist/sweetalert2.min.css", "node_modules/owl.carousel/dist/assets/owl.carousel.min.css", "node_modules/owl.carousel/dist/assets/owl.theme.default.min.css", "{$APPPATH}{$theme_path}css/cms.css", "{$APPPATH}{$theme_path}css/main.css") type='css' output='writable/cache/data/minify/all.min.css' disable={$minify_css}}
 		<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/bs5/dt-1.11.5/datatables.min.css">
 
-		{if $extra_css}<link rel="stylesheet" href="{$path}{$extra_css}">{/if}
-		{*	{if !is_array($extra_css)}
-				<link rel="stylesheet" href="{$path}{$extra_css}">
+
+		{if $extra_css}
+			{if !is_array($extra_css)}
+				<link type="text/css" rel="stylesheet" href="{$path}{$extra_css}">
 			{else}
 				{strip}
 					{foreach from=$extra_css item=css}
-						<link rel="stylesheet" href="{$path}{$css}">
-					 {/foreach}
+						<link type="text/css" rel="stylesheet" href="{$path}{$css}">
+					{/foreach}
 				{/strip}
 			{/if}
-		{/if} *}
+		{/if}
 
 		<!-- Header CSS.End -->
 
@@ -52,18 +53,6 @@
 		{minify files=array("application/js/jquery.min.js", "application/js/jquery.placeholder.min.js", "application/js/jquery.transit.min.js", "application/js/jquery.sort.js", "node_modules/bootstrap/dist/js/bootstrap.bundle.min.js", "node_modules/sweetalert2/dist/sweetalert2.all.min.js", "node_modules/owl.carousel/dist/owl.carousel.min.js", "application/js/main.js", "application/js/cookie.js", "application/js/ui.js", "application/js/language.js", "application/js/tooltip.js") type='js' output='writable/cache/data/minify/all.min.js' disable={$minify_js}}
 
 		<script type="text/javascript" src="https://cdn.datatables.net/v/bs5/dt-1.11.5/datatables.min.js"></script>
-
-		{if $extra_js}<script type="text/javascript" src="{$path}{$extra_js}"></script>{/if}
-		{*	{if !is_array($extra_js)}
-				<script type="text/javascript" src="{$path}{$extra_js}"></script>
-			{else}
-				{strip}
-					{foreach from=$extra_js item=js}
-						<script type="text/javascript" src="{$path}{$js}"></script>
-					 {/foreach}
-				{/strip}
-			{/if}
-		{/if} *}
 
 		<!-- Header JS.End -->
 
@@ -102,6 +91,18 @@
 			});
 			UI.initialize();
 		</script>
+
+		{if $extra_js}
+			{if !is_array($extra_js)}
+				<script type="text/javascript" src="{$path}{$extra_js}"></script>
+			{else}
+			    {strip}
+			        {foreach from=$extra_js item=js}
+			        	<script type="text/javascript" src="{$path}{$js}"></script>
+			        {/foreach}
+			    {/strip}
+			{/if}
+		{/if}
 
 		{if $analytics}
 		<script type="text/javascript">

@@ -37,7 +37,10 @@ class Oregoncore implements Emulator
         "character_stats"    => "character_stats",
         "guild_member"       => "guild_member",
         "guild"              => "guild",
-        "gm_tickets"         => "gm_tickets"
+        "gm_tickets"         => "gm_tickets",
+        'arena_team'         => 'arena_team',
+        'arena_team_member'  => 'arena_team_member',
+        'arena_team_stats'   => 'arena_team_member',
     ];
 
     /**
@@ -124,6 +127,32 @@ class Oregoncore implements Emulator
             "message" => "message",
             "createTime" => "createtime",
             "completed" => "closed",
+        ],
+
+        'arena_team' => [
+            'arenaTeamId'  => 'arenateamid',
+            'teamName'     => 'name',
+            'captainGuid'  => 'captainguid',
+            'teamType'     => 'type',
+        ],
+
+        'arena_team_member' => [
+            'arenaTeamId'   => 'arenateamid',
+            'guid'          => 'guid',
+            'rating'        => 'personal_rating',
+            'games'         => 'played_season',
+            'wins'          => 'wons_season',
+            'weekGames'     => 'played_week',
+            'weekWins'      => 'wons_week',
+            'teamType'      => 'type',
+        ],
+
+        'arena_team_stats' => [
+            'arenaTeamId'  => 'arenateamid',
+            'teamRating'   => 'rating',
+            'teamRank'     => 'rank',
+            'seasonGames'  => 'games',
+            'seasonWins'   => 'wins',
         ]
     ];
 
@@ -134,14 +163,17 @@ class Oregoncore implements Emulator
         "get_ip_banned"             => "SELECT ip, bandate, bannedby, banreason, unbandate FROM ip_banned WHERE ip=? AND unbandate > ?",
         "pvp_character"             => "SELECT * FROM characters WHERE totalKills > 0 ORDER BY totalKills DESC LIMIT ",
         "get_character"             => "SELECT * FROM characters WHERE guid=?",
-        "get_item"                  => "SELECT entry, Flags, name, displayid, Quality, bonding, InventoryType, MaxDurability, armor, RequiredLevel, ItemLevel, class, subclass, dmg_min1, dmg_max1, dmg_type1, holy_res, fire_res, nature_res, frost_res, shadow_res, arcane_res, delay, socketColor_1, socketColor_2, socketColor_3, spellid_1, spellid_2, spellid_3, spellid_4, spellid_5, spelltrigger_1, spelltrigger_2, spelltrigger_3, spelltrigger_4, spelltrigger_5, displayid, stat_type1, stat_value1, stat_type2, stat_value2, stat_type3, stat_value3, stat_type4, stat_value4, stat_type5, stat_value5, stat_type6, stat_value6, stat_type7, stat_value7, stat_type8, stat_value8, stat_type9, stat_value9, stat_type10, stat_value10, stackable FROM item_template WHERE entry=?",
+        "get_item"                  => "SELECT entry, Flags, name, displayid, Quality, bonding, InventoryType, MaxDurability, armor, RequiredLevel, ItemLevel, class, subclass, dmg_min1, dmg_max1, dmg_type1, holy_res, fire_res, nature_res, frost_res, shadow_res, arcane_res, delay, socketColor_1, socketColor_2, socketColor_3, spellid_1, spellid_2, spellid_3, spellid_4, spellid_5, spelltrigger_1, spelltrigger_2, spelltrigger_3, spelltrigger_4, spelltrigger_5, displayid, stat_type1, stat_value1, stat_type2, stat_value2, stat_type3, stat_value3, stat_type4, stat_value4, stat_type5, stat_value5, stat_type6, stat_value6, stat_type7, stat_value7, stat_type8, stat_value8, stat_type9, stat_value9, stat_type10, stat_value10, stackable, socketBonus, AllowableClass, AllowableRace FROM item_template WHERE entry=?",
         "get_rank"                  => "SELECT id id, gmlevel gmlevel FROM account_access WHERE id=?",
         "get_banned"                => "SELECT id id, bandate bandate, bannedby bannedby, banreason banreason, active active FROM account_banned WHERE id=? AND active=1",
         "get_charactername_by_guid" => "SELECT name name FROM characters WHERE guid = ?",
         "find_guilds"               => "SELECT g.guildid guildid, g.name name, COUNT(g_m.guid) GuildMemberCount, g.leaderguid leaderguid, c.name leaderName FROM guild g, guild_member g_m, characters c WHERE g.leaderguid = c.guid AND g_m.guildid = g.guildid AND g.name LIKE ? GROUP BY g.guildid",
         "get_inventory_item"        => "SELECT slot slot, item item, item_template itemEntry, enchantments enchantments FROM character_inventory, item_instance WHERE character_inventory.item = item_instance.guid AND character_inventory.slot >= 0 AND character_inventory.slot <= 18 AND character_inventory.guid=? AND character_inventory.bag=0",
         "get_guild_members"         => "SELECT m.guildid guildid, m.guid guid, c.name name, c.race race, c.class class, c.gender gender, c.level level, m.rank rank, r.rname rname, r.rights rights FROM guild_member m, guild_rank r, characters c WHERE m.guildid = r.guildid AND m.rank = r.rid AND c.guid = m.guid AND m.guildid = ? ORDER BY r.rights DESC",
-        "get_guild"                 => "SELECT guildid guildid, name guildName, leaderguid leaderguid, motd motd, createdate createdate FROM guild WHERE guildid = ?"
+        "get_guild"                 => "SELECT guildid guildid, name guildName, leaderguid leaderguid, motd motd, createdate createdate FROM guild WHERE guildid = ?",
+        'get_arena_team'            => 'SELECT `arena_team_member`.`arenateamid`, `arena_team`.`name` AS teamName, `arena_team_stats`.`rating` AS teamRating, `arena_team_stats`.`rank` AS teamRank FROM `arena_team_member`, `arena_team`, `arena_team_stats` WHERE `arena_team_member`.`guid` = ? AND `arena_team`.`arenateamid` = `arena_team_member`.`arenateamid` AND `arena_team`.`arenateamid` = `arena_team_stats`.`arenateamid` AND `arena_team`.`type` = ? LIMIT 1',
+        'get_arena_team_member'     => 'SELECT `arena_team_member`.`guid`, `arena_team_member`.`personal_rating` AS rating, `arena_team_member`.`played_season` AS games, `arena_team_member`.`wons_season` AS wins, `characters`.`name`, `characters`.`class`, `characters`.`race`, `characters`.`level` FROM `arena_team_member` RIGHT JOIN `characters` ON `characters`.`guid` = `arena_team_member`.`guid` WHERE `arena_team_member`.`arenateamid` = ? ORDER BY guid ASC'
+
     ];
 
     public function __construct($config)

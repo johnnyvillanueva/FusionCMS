@@ -27,6 +27,7 @@ class Realms
     private $classes_en;
     private $itemtype_en;
     private array $zones;
+    private array $maps;
     private array $hordeRaces;
     private array $allianceRaces;
 
@@ -36,12 +37,13 @@ class Realms
     {
         $this->CI = &get_instance();
 
-        $this->races = array();
-        $this->classes = array();
-        $this->zones = array();
-        $this->realms = array();
-        $this->hordeRaces = array();
-        $this->allianceRaces = array();
+        $this->races = [];
+        $this->classes = [];
+        $this->zones = [];
+        $this->maps = [];
+        $this->realms = [];
+        $this->hordeRaces = [];
+        $this->allianceRaces = [];
 
         // Load the realm object
         require_once('application/libraries/Realm.php');
@@ -119,7 +121,7 @@ class Realms
     /**
      * Get the realm objects
      *
-     * @return Array
+     * @return Realm[]
      */
     public function getRealms(): array
     {
@@ -204,6 +206,16 @@ class Realms
         $this->CI->config->load('wow_zones');
 
         $this->zones = $this->CI->config->item('zones');
+    }
+
+    /**
+     * Load the wow_maps config and populate the maps array
+     */
+    private function loadMaps(): void
+    {
+        $this->CI->config->load('wow_maps');
+
+        $this->maps = $this->CI->config->item('maps');
     }
 
     /**
@@ -330,6 +342,25 @@ class Realms
     }
 
     /**
+     * Get the map name by map ID
+     *
+     * @param int $mapId
+     * @return string
+     */
+    public function getMap(int $mapId): string
+    {
+        if (!($this->maps)) {
+            $this->loadMaps();
+        }
+
+        if (array_key_exists($mapId, $this->maps)) {
+            return $this->maps[$mapId];
+        } else {
+            return "Unknown location";
+        }
+    }
+
+    /**
      * Get all class names
      *
      * @return array
@@ -375,6 +406,23 @@ class Realms
     }
 
     /**
+     * Get the character faction (alliance/horde) by the race id
+     *
+     * @param  int $raceId
+     * @return Int
+     */
+    public function getFactionByRaceId(int $raceId): int
+    {
+        if (in_array($raceId, $this->getAllianceRaces())) {
+            return 1;
+        } elseif (in_array($raceId, $this->getHordeRaces())) {
+            return 2;
+        } else {
+            return 0;
+        }
+    }
+
+    /**
      * Load the general emulator, from the first realm
      */
     public function getEmulator()
@@ -390,7 +438,7 @@ class Realms
             show_error("The entered emulator (" . $this->defaultEmulator . ") doesn't exist in application/emulators/");
         }
 
-        $config = array();
+        $config = [];
         $config['id'] = 1;
 
         // Initialize the objects
@@ -403,7 +451,7 @@ class Realms
     public function getExpansions(): array
     {
         $expansions = $this->CI->config->item('expansions_name_en');
-        $return = array();
+        $return = [];
 
         foreach ($expansions as $key => $value)
         {
@@ -476,7 +524,8 @@ class Realms
             "Zandalari Troll",
             "Vulpera",
             "Void elf",
-            "Dracthyr"
+            "Dracthyr",
+            "Earthen",
         ];
 
         $level = $character['level'] < 30 ? 1 : ($character['level'] < 65 ? 60 : 70); // If character is below 30, use lvl 1 image below 65 use lvl 60 image and +65 use lvl70 image
@@ -495,6 +544,8 @@ class Realms
             $faction = ($raceId == 24) ? 'n' : (($raceId == 25) ? 'a' : 'h');
         } elseif ($race == "Dracthyr") {
             $faction = ($raceId == 52) ? 'a' : 'h';
+        } elseif ($race == "Earthen") {
+            $faction = ($raceId == 85) ? 'a' : 'h';
         }
 
         $race = preg_replace("/ /", "", $race);

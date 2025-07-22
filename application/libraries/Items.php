@@ -20,6 +20,8 @@ class Items
     public function __construct()
     {
         $this->CI = &get_instance();
+
+        $this->CI->config->load('wow_constants');
     }
 
     /**
@@ -114,19 +116,21 @@ class Items
      * @param Int $item
      * @param $realm
      * @param String $type
+     * @param bool $enableCache
      * @return bool|string|array
      */
-    public function getItemDB(int $item, $realm, string $type): mixed
+    public function getItemFusionDB(int $item, $realm, string $type, bool $enableCache = true): mixed
     {
         // Get the item ID
-        $query = $this->CI->db->query("SELECT * FROM item_template WHERE entry = ? LIMIT 1", [$item]);
+        $query = $this->CI->db->table('item_template')->where('entry', $item)->get();
 
         // Check for results
         if ($query->getNumRows() > 0) {
             $row = $query->getResultArray()[0];
 
             // save to cache
-            $this->CI->cache->save('items/item_' . $realm . '_' . $item, $row);
+            if ($enableCache)
+                $this->CI->cache->save('items/item_' . $realm . '_' . $item, $row);
 
             return $this->getItemType($type, $row);
         }
@@ -148,43 +152,50 @@ class Items
 
         if ($cache !== false) {
             return $this->getItemType($type, $cache);
-        } else {
-            // Load the realm
-            $realmObj = $this->CI->realms->getRealm($realm);
+        }
 
-            // In patch 6.x.x and higher, item_template table has been removed from world DB.
-            if ($realmObj->getExpansionId() > 4) {
-                // check if item is in cache
-                $item_in_cache = $this->getItemCache($item, $realm, $type);
+        $realmObj = $this->CI->realms->getRealm($realm);
+        if ($realmObj->getExpansionId() > 4) {
+            return $this->getItemDataFromApi($item, $realm, $type);
+        }
 
-                if ($item_in_cache) {
-                    return $item_in_cache;
-                } else {
-                    // check if item is in database
-                    $item_in_db = $this->getItemDB($item, $realm, $type);
+        return $this->getItemDataFromWorldDB($item, $realm, $type);
+    }
 
-                    if ($item_in_db) {
-                        return $item_in_db;
-                    } else {
-                        // check if item is on Wowhead
-                        return $this->getItemWowHead($item, $realm, $type);
-                    }
-                }
+    private function getItemDataFromApi(int $item, int $realm, string $type): mixed
+    {
+        if ($itemCache = $this->getItemCache($item, $realm, $type)) {
+            return $itemCache;
+        }
+        if ($itemDb = $this->getItemFusionDB($item, $realm, $type)) {
+            return $itemDb;
+        }
+        return $this->getItemWowHead($item, $realm, $type);
+    }
+
+    private function getItemDataFromWorldDB(int $item, int $realm, string $type): mixed
+    {
+        $realmObj = $this->CI->realms->getRealm($realm);
+
+        $db = $this->CI->load->database($realmObj->getConfig('world'), true);
+        $query = $db->query(query('get_item', $realm), [$item]);
+
+        if ($db->error()) {
+            $error = $db->error();
+            if ($error['code'] != 0) {
+                die($error["message"]);
             }
+        }
 
-            $db = $this->CI->load->database($realmObj->getConfig('world'), true);
-            $query = $db->query(query('get_item', $realm), [$item]);
+        if ($query->getNumRows() > 0) {
+            $row = $query->getResultArray()[0];
 
-            if ($db->error()) {
-                $error = $db->error();
-                if ($error['code'] != 0) {
-                    die($error["message"]);
-                }
-            }
+            // First get icon from Fusion CMS Item template
+            $item_template = $this->getItemFusionDB($item, $realm, 'all', false);
 
-            if ($query->getNumRows() > 0) {
-                $row = $query->getResultArray()[0];
-
+            if ($item_template) {
+                $row['icon'] = $item_template['icon'];
+            } else {
                 // check if item is on Wowhead
                 $item_wowhead = $this->getItemWowHead($item, $realm, 'all', false);
 
@@ -198,86 +209,103 @@ class Items
                 } else {
                     $row['icon'] = 'inv_misc_questionmark';
                 }
-
-                $data = [
-                    'item' => $this->getItemDataFromWorldDB($row),
-                    'icon' => $row['icon'],
-                    'api_item_icons' => $this->CI->config->item('api_item_icons')
-                ];
-
-                $row['htmlTooltip'] = CI::$APP->smarty->view(CI::$APP->template->view_path . "tooltip.tpl", $data, true);
-
-                // Cache it forever
-                $this->CI->cache->save("items/item_" . $realm . "_" . $item, $row);
-
-                return $this->getItemType($type, $row);
-            } else {
-                // Cache it for 24 hours
-                $this->CI->cache->save("items/item_" . $realm . "_" . $item, 'empty', 60 * 60 * 24);
-
-                return false;
             }
+
+            $data = [
+                'item' => $this->parseItemData($row),
+                'icon' => $row['icon'],
+                'api_item_icons' => $this->CI->config->item('api_item_icons')
+            ];
+
+            $row['htmlTooltip'] = CI::$APP->smarty->view(CI::$APP->template->view_path . "tooltip.tpl", $data, true);
+
+            // Cache it forever
+            $this->CI->cache->save("items/item_" . $realm . "_" . $item, $row);
+
+            return $this->getItemType($type, $row);
+        } else {
+            // Cache it for 24 hours
+            $this->CI->cache->save("items/item_" . $realm . "_" . $item, 'empty', 60 * 60 * 24);
+
+            return false;
         }
     }
 
     /**
      * Gather all data item needed
      */
-    private function getItemDataFromWorldDB($itemDB)
+    private function parseItemData($itemDB)
     {
-        // Assign them
-        $bind = lang("bind", "wow_tooltip");
-        $slots = lang("slots", "wow_tooltip");
-        $damages = lang("damages", "wow_tooltip");
-
         // No item was found
         if (!$itemDB || $itemDB == "empty") {
             return lang("unknown_item", "tooltip");
         }
 
-        $flags = $this->getFlags($itemDB['Flags']);
+        // Assign them
+        $bind = lang("bind", "wow_tooltip");
+        $slots = lang("slots", "wow_tooltip");
+        $damages = lang("damages", "wow_tooltip");
 
-        $item['name'] = $itemDB['name'];
+        $flags = $itemDB['Flags'];
 
-        // Support custom colors
-        if (preg_match("/\|cff/", $itemDB['name'])) {
-            while (preg_match("/\|cff/", $item['name'])) {
-                $item['name'] = preg_replace("/\|cff([A-Za-z0-9]{6})(.*)(\|cff)?/", '<span style="color:#$1;">$2</span>', $item['name']);
-            }
-        }
-
-        $item['quality'] = $itemDB['Quality'];
-        $item['bind'] = $bind[$itemDB['bonding']];
-        $item['unique'] = ($this->hasFlag(524288, $flags)) ? "Unique-Equipped" : null;
-        $item['slot'] = $slots[$itemDB['InventoryType']];
-        $item['durability'] = $itemDB['MaxDurability'];
-        $item['armor'] = (array_key_exists("armor", $itemDB)) ? $itemDB['armor'] : false;
-        $item['required'] = $itemDB['RequiredLevel'];
-        $item['level'] = $itemDB['ItemLevel'];
-        $item['type'] = $this->getType($itemDB['class'], $itemDB['subclass']);
-        $item['damage_type'] = (array_key_exists("dmg_type1", $itemDB)) ? $damages[$itemDB['dmg_type1']] : false;
-
-        if (array_key_exists("dmg_min1", $itemDB)) {
-            $item['damage_min'] = $itemDB['dmg_min1'];
-            $item['damage_max'] = $itemDB['dmg_max1'];
-        } else {
-            $item['damage_min'] = false;
-            $item['damage_max'] = false;
-        }
-
-        $item['spells'] = $this->getSpells($itemDB);
-        $item['attributes'] = $this->getAttributes($itemDB);
-        $item['holy_res'] = (array_key_exists("holy_res", $itemDB)) ? $itemDB['holy_res'] : $this->getAttributeById(53, $itemDB);
-        $item['fire_res'] = (array_key_exists("fire_res", $itemDB)) ? $itemDB['fire_res'] : $this->getAttributeById(51, $itemDB);
-        $item['nature_res'] = (array_key_exists("nature_res", $itemDB)) ? $itemDB['nature_res'] : $this->getAttributeById(55, $itemDB);
-        $item['frost_res'] = (array_key_exists("frost_res", $itemDB)) ? $itemDB['frost_res'] : $this->getAttributeById(52, $itemDB);
-        $item['shadow_res'] = (array_key_exists("shadow_res", $itemDB)) ? $itemDB['shadow_res'] : $this->getAttributeById(54, $itemDB);
-        $item['arcane_res'] = (array_key_exists("arcane_res", $itemDB)) ? $itemDB['arcane_res'] : $this->getAttributeById(56, $itemDB);
-        $item['speed'] = ($itemDB['delay'] > 0) ? ($itemDB['delay'] / 1000) . "0" : 0;
-        $item['dps'] = $this->getDPS($item['damage_min'], $item['damage_max'], $item['speed']);
-        $item['sockets'] = $this->getSockets($itemDB);
+        $item = [
+            'name'           => $this->formatItemName($itemDB['name']),
+            'isHeroic'       => ($flags & ItemFlags::ITEM_FLAG_HEROIC_TOOLTIP),
+            'account_wide'   => ($flags & ItemFlags::ITEM_FLAG_IS_BOUND_TO_ACCOUNT),
+            'quality'        => $itemDB['Quality'],
+            'bind'           => $bind[$itemDB['bonding']] ?? null,
+            'unique'         => ($flags & ItemFlags::ITEM_FLAG_UNIQUE_EQUIPPABLE) ? "Unique-Equipped" : null,
+            'slot'           => $slots[$itemDB['InventoryType']] ?? null,
+            'durability'     => $itemDB['MaxDurability'] ?? null,
+            'armor'          => array_key_exists('armor', $itemDB) ? $itemDB['armor'] : false,
+            'required'       => $itemDB['RequiredLevel'] ?? null,
+            'AllowableClass' => $this->getAllowedClasses($itemDB),
+            'level'          => $itemDB['ItemLevel'] ?? null,
+            'type'           => $this->getType($itemDB['class'], $itemDB['subclass']),
+            'damage_type'    => array_key_exists("dmg_type1", $itemDB) ? $damages[$itemDB['dmg_type1']] : false,
+            'damage_min'     => array_key_exists("dmg_min1", $itemDB) ? $itemDB['dmg_min1'] : false,
+            'damage_max'     => array_key_exists("dmg_max1", $itemDB) ? $itemDB['dmg_max1'] : false,
+            'spells'         => $this->getSpells($itemDB),
+            'attributes'     => $this->getAttributes($itemDB),
+            'resistances'    => $this->getResistances($itemDB),
+            'speed'          => $this->calculateSpeed($itemDB['delay']),
+            'dps'            => $this->getDPS($itemDB['dmg_min1'] ?? false, $itemDB['dmg_max1'] ?? false, $itemDB['delay']),
+            'sockets'        => $this->getSockets($itemDB),
+            'socketBonus'    => $itemDB['socketBonus'] ?? null
+        ];
 
         return $item;
+    }
+
+    private function formatItemName($name)
+    {
+        // Support custom colors
+        while (preg_match("/\|cff/", $name)) {
+            $name = preg_replace("/\|cff([A-Za-z0-9]{6})(.*)(\|cff)?/", '<span style="color:#$1;">$2</span>', $name);
+        }
+        return $name;
+    }
+
+    private function getAllowedClasses($itemDB): ?array
+    {
+        return $itemDB['AllowableClass'] > 0 ? $this->getClassesFromMask($itemDB['AllowableClass'], $this->CI->config->item('classes_en')) : null;
+    }
+
+    private function calculateSpeed($delay): int|string
+    {
+        return ($delay > 0) ? ($delay / 1000) . '0' : 0;
+    }
+
+    private function getResistances($itemDB): array
+    {
+        return [
+            lang('holy', 'tooltip')   => array_key_exists('holy_res',   $itemDB) ? $itemDB['holy_res']   : $this->getAttributeById(53, $itemDB),
+            lang('nature', 'tooltip') => array_key_exists('nature_res', $itemDB) ? $itemDB['nature_res'] : $this->getAttributeById(55, $itemDB),
+            lang('fire', 'tooltip')   => array_key_exists("fire_res",   $itemDB) ? $itemDB['fire_res']   : $this->getAttributeById(51, $itemDB),
+            lang('frost', 'tooltip')  => array_key_exists('frost_res',  $itemDB) ? $itemDB['frost_res']  : $this->getAttributeById(52, $itemDB),
+            lang('shadow', 'tooltip') => array_key_exists('shadow_res', $itemDB) ? $itemDB['shadow_res'] : $this->getAttributeById(54, $itemDB),
+            lang('arcane', 'tooltip') => array_key_exists('arcane_res', $itemDB) ? $itemDB['arcane_res'] : $this->getAttributeById(56, $itemDB),
+        ];
     }
 
     /**
@@ -288,7 +316,7 @@ class Items
      */
     private function getSockets(array $item): bool|string
     {
-        if (!array_key_exists("socketColor_1", $item)) {
+        if (!array_key_exists('socketColor_1', $item)) {
             return false;
         }
 
@@ -319,12 +347,12 @@ class Items
             8388608 => "primordial",
         ];
 
-        $output = "";
+        $output = '';
 
         for ($i = 1; $i < 3; $i++) {
             $color = $item['socketColor_' . $i];
             if (isset($sockets[$color])) {
-                $output .= "<span class='socket-{$sockets[$color]} q0'>" . lang($sockets[$color], "tooltip") . "</span><br />";
+                $output .= "<span class='socket-slot socket-{$sockets[$color]} q0' data-socket-color='{$color}'>" . lang($sockets[$color], "tooltip") . "</span><br />";
             }
         }
 
@@ -490,41 +518,6 @@ class Items
     }
 
     /**
-     * Get flags as an array
-     *
-     * @param int $flags
-     * @return array
-     */
-    private function getFlags(int $flags): array
-    {
-        $bits = [];
-
-        for ($i = 1; $i <= $flags; $i *= 2) {
-            if (($i & $flags) > 0) {
-                $bits[] = $i;
-            }
-        }
-
-        return $bits;
-    }
-
-    /**
-     * Check if our flag array contains the flag
-     *
-     * @param int $flag
-     * @param array $flags
-     * @return bool
-     */
-    private function hasFlag(int $flag, array $flags): bool
-    {
-        if (in_array($flag, $flags)) {
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    /**
      * Helper function to get an item type
      */
     private function getItemType(string $type, array $data): mixed
@@ -635,4 +628,54 @@ class Items
         // Find stackable
         return (int)filter_var($nodes->item(0)->textContent, FILTER_SANITIZE_NUMBER_INT);
     }
+
+    function getClassesFromMask($allowableClass, $classList): array
+    {
+        $allowedClasses = [];
+
+        foreach ($classList as $bit => $className) {
+            if ($allowableClass & (1 << ($bit - 1))) {
+                $allowedClasses[$bit] = $className;
+            }
+        }
+
+        return $allowedClasses;
+    }
 }
+
+class ItemFlags
+{
+    public const int ITEM_FLAG_NO_PICKUP                         = 0x00000001;
+    public const int ITEM_FLAG_CONJURED                          = 0x00000002;
+    public const int ITEM_FLAG_HAS_LOOT                          = 0x00000004;
+    public const int ITEM_FLAG_HEROIC_TOOLTIP                    = 0x00000008;
+    public const int ITEM_FLAG_DEPRECATED                        = 0x00000010;
+    public const int ITEM_FLAG_NO_USER_DESTROY                   = 0x00000020;
+    public const int ITEM_FLAG_PLAYERCAST                        = 0x00000040;
+    public const int ITEM_FLAG_NO_EQUIP_COOLDOWN                 = 0x00000080;
+    public const int ITEM_FLAG_LEGACY                            = 0x00000100;
+    public const int ITEM_FLAG_IS_WRAPPER                        = 0x00000200;
+    public const int ITEM_FLAG_USES_RESOURCES                    = 0x00000400;
+    public const int ITEM_FLAG_MULTI_DROP                        = 0x00000800;
+    public const int ITEM_FLAG_ITEM_PURCHASE_RECORD              = 0x00001000;
+    public const int ITEM_FLAG_PETITION                          = 0x00002000;
+    public const int ITEM_FLAG_HAS_TEXT                          = 0x00004000;
+    public const int ITEM_FLAG_NO_DISENCHANT                     = 0x00008000;
+    public const int ITEM_FLAG_REAL_DURATION                     = 0x00010000;
+    public const int ITEM_FLAG_NO_CREATOR                        = 0x00020000;
+    public const int ITEM_FLAG_IS_PROSPECTABLE                   = 0x00040000;
+    public const int ITEM_FLAG_UNIQUE_EQUIPPABLE                 = 0x00080000;
+    public const int ITEM_FLAG_DISABLE_AUTO_QUOTES               = 0x00100000;
+    public const int ITEM_FLAG_IGNORE_DEFAULT_ARENA_RESTRICTIONS = 0x00200000;
+    public const int ITEM_FLAG_NO_DURABILITY_LOSS                = 0x00400000;
+    public const int ITEM_FLAG_USE_WHEN_SHAPESHIFTED             = 0x00800000;
+    public const int ITEM_FLAG_HAS_QUEST_GLOW                    = 0x01000000;
+    public const int ITEM_FLAG_HIDE_UNUSABLE_RECIPE              = 0x02000000;
+    public const int ITEM_FLAG_NOT_USEABLE_IN_ARENA              = 0x04000000;
+    public const int ITEM_FLAG_IS_BOUND_TO_ACCOUNT               = 0x08000000;
+    public const int ITEM_FLAG_NO_REAGENT_COST                   = 0x10000000;
+    public const int ITEM_FLAG_IS_MILLABLE                       = 0x20000000;
+    public const int ITEM_FLAG_REPORT_TO_GUILD_CHAT              = 0x40000000;
+    public const int ITEM_FLAG_NO_PROGRESSIVE_LOOT               = 0x80000000;
+}
+
